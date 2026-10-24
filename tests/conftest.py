@@ -82,7 +82,9 @@ def create_user(app):
             user = User(
                 name=name,
                 username=username,
-                password=generate_password_hash(password),
+                # Cheap hash keeps fixtures fast; registration tests still
+                # exercise the application's real default hashing.
+                password=generate_password_hash(password, method="pbkdf2:sha256:1000"),
                 is_admin=is_admin,
             )
             db.session.add(user)

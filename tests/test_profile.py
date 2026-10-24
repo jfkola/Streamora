@@ -62,3 +62,28 @@ def test_missing_theme_color_is_rejected(app, auth_client, user_id, csrf_token):
     post_profile(auth_client, csrf_token, action="update_theme")
 
     assert get_user(app, user_id).theme_color == before
+
+
+def test_profile_name_update(app, auth_client, user_id, csrf_token):
+    response = post_profile(auth_client, csrf_token, action="update_profile", name="Renamed")
+
+    assert response.status_code == 302
+    assert get_user(app, user_id).name == "Renamed"
+
+
+def test_user_cannot_self_upgrade_subscription(app, auth_client, user_id, csrf_token):
+    post_profile(
+        auth_client,
+        csrf_token,
+        action="update_subscription",
+        subscription_tier="Premium",
+    )
+
+    assert get_user(app, user_id).subscription_tier == "Free"
+
+
+def test_profile_page_has_no_subscription_form(auth_client):
+    html = auth_client.get("/profile").get_data(as_text=True)
+
+    assert "update_subscription" not in html
+    assert "Subscription management is not enabled" in html
