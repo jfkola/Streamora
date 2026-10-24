@@ -8,5 +8,3 @@ gunicorn
 psycopg2-binary
 Flask-WTF
 Flask-Migrate
-pytest
-pytest-cov
