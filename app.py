@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_wtf.csrf import CSRFProtect
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import cloudinary
@@ -12,7 +14,12 @@ from datetime import datetime
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'secret123')
+secret_key = os.environ.get("SECRET_KEY")
+if not secret_key:
+    raise RuntimeError("SECRET_KEY must be configured")
+
+app.config["SECRET_KEY"] = secret_key
+app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024 * 1024
 db_url = os.environ.get('DATABASE_URL', 'sqlite:///site.db')
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -20,6 +27,9 @@ if db_url.startswith("postgres://"):
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 
 db = SQLAlchemy(app)
+# render_as_batch lets Alembic alter constraints on SQLite during local development
+migrate = Migrate(app, db, render_as_batch=True)
+csrf = CSRFProtect(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -37,8 +47,8 @@ cloudinary.config(
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    username = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(200))
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
     subscription_tier = db.Column(db.String(50), default='Free')
     profile_pic = db.Column(db.String(500), nullable=True)
@@ -53,16 +63,48 @@ class Movie(db.Model):
     subtitle = db.Column(db.String(500))
 
 class WatchHistory(db.Model):
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "movie_id",
+            name="uq_watch_history_user_movie",
+        ),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'))
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False,
+    )
+    movie_id = db.Column(
+        db.Integer,
+        db.ForeignKey("movie.id"),
+        nullable=False,
+    )
     timestamp = db.Column(db.Float, default=0.0)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
 
 class MyList(db.Model):
+    __table_args__ = (
+        db.UniqueConstraint(
+            "user_id",
+            "movie_id",
+            name="uq_mylist_user_movie",
+        ),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    movie_id = db.Column(db.Integer, db.ForeignKey('movie.id'))
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id"),
+        nullable=False,
+    )
+    movie_id = db.Column(
+        db.Integer,
+        db.ForeignKey("movie.id"),
+        nullable=False,
+    )
     added_date = db.Column(db.DateTime, default=datetime.utcnow)
 
 # ---------------- LOGIN ----------------
@@ -359,12 +401,6 @@ def admin_edit(id):
     db.session.commit()
     flash(f"Metadata for '{movie.title}' updated.", "success")
     return redirect('/admin')
-
-
-# ---------- INIT DB ----------
-
-with app.app_context():
-    db.create_all()
 
 
 # ---------- RUN ----------
