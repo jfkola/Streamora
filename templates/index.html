@@ -290,6 +290,10 @@
 
 {% block scripts %}
 <script>
+const csrfToken = document
+    .querySelector('meta[name="csrf-token"]')
+    .getAttribute('content');
+
 function toggleMyList(movieId, btn) {
     let icon = btn.querySelector('i');
     let isAdded = icon.classList.contains('fa-check');
@@ -308,7 +312,10 @@ function toggleMyList(movieId, btn) {
 
     fetch('/api/mylist/toggle', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
         body: JSON.stringify({ movie_id: movieId })
     })
     .then(res => res.json())

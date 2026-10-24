@@ -49,6 +49,7 @@
         </div>
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="mb-3 position-relative">
                 <i class="fa fa-user position-absolute text-muted" style="top: 18px; left: 15px;"></i>
                 <input name="username" class="form-control ps-5" placeholder="Username" required>

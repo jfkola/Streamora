@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{% block title %}Streamora{% endblock %}</title>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -112,7 +113,12 @@
                         <ul class="dropdown-menu dropdown-menu-lg-end mt-3 shadow-lg rounded-3">
                             <li><a class="dropdown-item" href="/profile"><i class="fa fa-cog me-2"></i>Settings</a></li>
                             <li><hr class="dropdown-divider bg-secondary opacity-25"></li>
-                            <li><a class="dropdown-item text-danger" href="/logout"><i class="fa fa-sign-out-alt me-2"></i>Sign Out</a></li>
+                            <li>
+                                <form method="POST" action="{{ url_for('logout') }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="dropdown-item text-danger"><i class="fa fa-sign-out-alt me-2"></i>Sign Out</button>
+                                </form>
+                            </li>
                         </ul>
                     </div>
                 {% else %}

@@ -6,6 +6,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 import cloudinary
 import cloudinary.uploader
+import math
 import os
 from dotenv import load_dotenv
 from functools import wraps
@@ -223,12 +224,12 @@ def login():
     return render_template("login.html")
 
 
-@app.route('/logout')
+@app.post("/logout")
 @login_required
 def logout():
     logout_user()
     flash("You have been logged out.", "info")
-    return redirect('/')
+    return redirect("/")
 
 
 # ---------- PROFILE ----------
@@ -251,13 +252,6 @@ def profile():
             db.session.commit()
             flash("Profile updated successfully.", "success")
             
-        elif action == 'update_subscription':
-            new_tier = request.form.get('subscription_tier')
-            if new_tier in ['Free', 'Basic', 'Premium']:
-                current_user.subscription_tier = new_tier
-                db.session.commit()
-                flash(f"Subscription upgraded to {new_tier} plan!", "success")
-                
         elif action == 'update_theme':
             new_color = request.form.get('theme_color')
             if new_color:
@@ -272,41 +266,76 @@ def profile():
 
 # ---------- API & TRACKING ----------
 
-@app.route('/api/progress', methods=['POST'])
+@app.post("/api/progress")
 @login_required
 def update_progress():
-    data = request.json
-    movie_id = data.get('movie_id')
-    timestamp = data.get('timestamp')
-    if movie_id and timestamp is not None:
-        history = WatchHistory.query.filter_by(user_id=current_user.id, movie_id=movie_id).first()
-        if not history:
-            history = WatchHistory(user_id=current_user.id, movie_id=movie_id)
-            db.session.add(history)
-        history.timestamp = float(timestamp)
-        history.last_updated = datetime.utcnow()
-        db.session.commit()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return {"error": "A JSON object is required"}, 400
+
+    try:
+        movie_id = int(data["movie_id"])
+        timestamp = float(data["timestamp"])
+    except (KeyError, TypeError, ValueError):
+        return {"error": "Valid movie_id and timestamp are required"}, 400
+
+    if not math.isfinite(timestamp) or timestamp < 0:
+        return {"error": "timestamp must be a non-negative finite number"}, 400
+
+    movie = db.session.get(Movie, movie_id)
+    if movie is None:
+        return {"error": "Movie not found"}, 404
+
+    history = WatchHistory.query.filter_by(
+        user_id=current_user.id,
+        movie_id=movie_id,
+    ).first()
+
+    if history is None:
+        history = WatchHistory(
+            user_id=current_user.id,
+            movie_id=movie_id,
+        )
+        db.session.add(history)
+
+    history.timestamp = timestamp
+    history.last_updated = datetime.utcnow()
+    db.session.commit()
+
     return {"status": "ok"}
 
-@app.route('/api/mylist/toggle', methods=['POST'])
+
+@app.post("/api/mylist/toggle")
 @login_required
 def toggle_mylist():
-    data = request.json
-    movie_id = data.get('movie_id')
-    
-    if not movie_id:
-        return {"error": "Missing movie_id"}, 400
-        
-    item = MyList.query.filter_by(user_id=current_user.id, movie_id=movie_id).first()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return {"error": "A JSON object is required"}, 400
+
+    try:
+        movie_id = int(data["movie_id"])
+    except (KeyError, TypeError, ValueError):
+        return {"error": "Valid movie_id is required"}, 400
+
+    if db.session.get(Movie, movie_id) is None:
+        return {"error": "Movie not found"}, 404
+
+    item = MyList.query.filter_by(
+        user_id=current_user.id,
+        movie_id=movie_id,
+    ).first()
+
     if item:
         db.session.delete(item)
-        db.session.commit()
-        return {"status": "removed"}
+        status = "removed"
     else:
-        new_item = MyList(user_id=current_user.id, movie_id=movie_id)
-        db.session.add(new_item)
-        db.session.commit()
-        return {"status": "added"}
+        db.session.add(
+            MyList(user_id=current_user.id, movie_id=movie_id)
+        )
+        status = "added"
+
+    db.session.commit()
+    return {"status": status}
 
 
 # ---------- WATCH ----------

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Watching {{ movie.title }} - Streamora</title>
 
 <!-- Fonts & Bootstrap -->
@@ -400,6 +401,10 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Analytics Tracking
+const csrfToken = document
+    .querySelector('meta[name="csrf-token"]')
+    .getAttribute('content');
+
 const MOVIE_ID = {{ movie.id }};
 const START_TIME = {{ start_time }};
 
@@ -411,7 +416,10 @@ setInterval(() => {
     if(!video.paused) {
         fetch('/api/progress', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
             body: JSON.stringify({ movie_id: MOVIE_ID, timestamp: video.currentTime })
         }).catch(err => console.log('Tracking error:', err));
     }

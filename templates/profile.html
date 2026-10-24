@@ -32,6 +32,7 @@
                     <div class="card border-0 shadow rounded-4 p-4 p-md-5" style="background: var(--bg-card);">
                         <h3 class="fw-bold mb-4">Profile Details</h3>
                         <form method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="update_profile">
                             <div class="mb-4">
                                 <label class="form-label text-muted fw-semibold">Display Name</label>
@@ -52,45 +53,10 @@
                 <div class="tab-pane fade" id="subscription-tab" role="tabpanel">
                     <div class="card border-0 shadow rounded-4 p-4 p-md-5" style="background: var(--bg-card);">
                         <h3 class="fw-bold mb-4">Subscription Plan</h3>
-                        <p class="text-muted mb-4">Upgrade your plan to unlock higher resolution streaming and exclusive features.</p>
-                        
-                        <form method="POST">
-                            <input type="hidden" name="action" value="update_subscription">
-                            <div class="row g-4 mb-4">
-                                <div class="col-md-4">
-                                    <label class="w-100 h-100">
-                                        <input type="radio" name="subscription_tier" value="Free" class="d-none theme-radio-parent" {% if current_user.subscription_tier == 'Free' %}checked{% endif %}>
-                                        <div class="card border border-2 theme-radio-card {% if current_user.subscription_tier == 'Free' %}active-card{% endif %} h-100 p-4 text-center rounded-4" style="background: var(--bg-dark); cursor: pointer;">
-                                            <h5 class="fw-bold mb-1">Free</h5>
-                                            <h3 class="mb-3">$0<span class="fs-6 text-muted">/mo</span></h3>
-                                            <p class="small text-muted mb-0">Standard Definition (480p)<br>Ad-supported streaming.</p>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="w-100 h-100">
-                                        <input type="radio" name="subscription_tier" value="Basic" class="d-none theme-radio-parent" {% if current_user.subscription_tier == 'Basic' %}checked{% endif %}>
-                                        <div class="card border border-2 theme-radio-card {% if current_user.subscription_tier == 'Basic' %}active-card{% endif %} h-100 p-4 text-center rounded-4" style="background: var(--bg-dark); cursor: pointer;">
-                                            <h5 class="fw-bold mb-1">Basic</h5>
-                                            <h3 class="mb-3">$8.99<span class="fs-6 text-muted">/mo</span></h3>
-                                            <p class="small text-muted mb-0">High Definition (720p)<br>Ad-free streaming.</p>
-                                        </div>
-                                    </label>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="w-100 h-100">
-                                        <input type="radio" name="subscription_tier" value="Premium" class="d-none theme-radio-parent" {% if current_user.subscription_tier == 'Premium' %}checked{% endif %}>
-                                        <div class="card border border-2 theme-radio-card position-relative {% if current_user.subscription_tier == 'Premium' %}active-card{% endif %} h-100 p-4 text-center rounded-4" style="background: var(--bg-dark); cursor: pointer;">
-                                            <div class="position-absolute align-self-center py-1 px-3 text-white rounded-pill small fw-bold" style="background-color: var(--brand-red); top: -12px; left: 50%; transform: translateX(-50%);">POPULAR</div>
-                                            <h5 class="fw-bold mb-1">Premium</h5>
-                                            <h3 class="mb-3">$14.99<span class="fs-6 text-muted">/mo</span></h3>
-                                            <p class="small text-muted mb-0">Ultra HD (4K)<br>Spatial Audio & Offline.</p>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                            <button class="btn btn-brand px-5 py-2 rounded-pill fw-bold"><i class="fa fa-gem me-2"></i> Update Subscription</button>
-                        </form>
+                        <p class="mb-2">Current plan: <strong>{{ current_user.subscription_tier }}</strong></p>
+                        <p class="text-muted">
+                            Subscription management is not enabled in this portfolio deployment.
+                        </p>
                     </div>
                 </div>
                 {% endif %}
@@ -102,6 +68,7 @@
                         <p class="text-muted mb-4">Customize the accent color of Streamora across your devices.</p>
                         
                         <form method="POST" id="theme-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="action" value="update_theme">
                             
                             <label class="form-label text-muted fw-semibold">Select Theme Color</label>
