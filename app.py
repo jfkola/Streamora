@@ -55,6 +55,17 @@ ALLOWED_THEME_COLORS = {
     "#00D1B2",
 }
 
+ALLOWED_VIDEO_EXTENSIONS = {"mp4", "mov", "mkv", "webm"}
+ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+ALLOWED_SUBTITLE_EXTENSIONS = {"srt", "vtt"}
+
+
+def has_allowed_extension(filename, allowed):
+    return (
+        "." in filename
+        and filename.rsplit(".", 1)[1].lower() in allowed
+    )
+
 # ---------------- MODELS ----------------
 
 class User(db.Model, UserMixin):
@@ -383,8 +394,38 @@ def admin_upload():
     sub = request.files.get('subtitle')
     
     if not video or not thumb:
-        return {"error": "Video and Thumbnail files are both required."}, 400
-        
+        return {
+            "error": "Video and thumbnail files are required."
+        }, 400
+
+    if not has_allowed_extension(
+        video.filename,
+        ALLOWED_VIDEO_EXTENSIONS,
+    ):
+        return {"error": "Unsupported video format."}, 400
+
+    if not has_allowed_extension(
+        thumb.filename,
+        ALLOWED_IMAGE_EXTENSIONS,
+    ):
+        return {"error": "Unsupported thumbnail format."}, 400
+
+    if (
+        sub
+        and sub.filename
+        and not has_allowed_extension(
+            sub.filename,
+            ALLOWED_SUBTITLE_EXTENSIONS,
+        )
+    ):
+        return {"error": "Unsupported subtitle format."}, 400
+
+    title = request.form.get("title", "").strip()
+    category = request.form.get("category", "").strip()
+
+    if not title or not category:
+        return {"error": "Title and category are required."}, 400
+
     try:
         import tempfile
         fd, temp_path = tempfile.mkstemp(suffix=".mp4")
@@ -405,17 +446,19 @@ def admin_upload():
             sub_url = sub_upload['secure_url']
 
         movie = Movie(
-            title=request.form.get('title', 'Unknown Title'),
-            category=request.form.get('category', 'Uncategorized'),
-            video_url=video_upload['secure_url'],
-            thumbnail=thumb_upload['secure_url'],
-            subtitle=sub_url
+            title=title,
+            category=category,
+            video_url=video_upload["secure_url"],
+            thumbnail=thumb_upload["secure_url"],
+            subtitle=sub_url,
         )
         db.session.add(movie)
         db.session.commit()
         return {"message": "Movie uploaded successfully!"}
-    except Exception as e:
-        return {"error": str(e)}, 500
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Media upload failed")
+        return {"error": "Media upload failed."}, 500
 
 @app.route('/admin/delete/<int:id>', methods=['POST'])
 @login_required
