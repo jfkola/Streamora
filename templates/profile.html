@@ -74,7 +74,7 @@
                             <label class="form-label text-muted fw-semibold">Select Theme Color</label>
                             <div class="d-flex flex-wrap gap-3 mb-5">
                                 <!-- Themes -->
-                                {% set themes = [('#00E5FF', 'dark'), ('#00A8E1', 'white'), ('#1ce783', 'dark'), ('#9e00ff', 'white'), ('#00ffff', 'dark'), ('#ff007f', 'white'), ('#ffb400', 'dark'), ('#00d1b2', 'dark')] %}
+                                {% set themes = [('#00E5FF', 'dark'), ('#00A8E1', 'white'), ('#1CE783', 'dark'), ('#9E00FF', 'white'), ('#00FFFF', 'dark'), ('#FF007F', 'white'), ('#FFB400', 'dark'), ('#00D1B2', 'dark')] %}
                                 {% for hex, txt in themes %}
                                 <label>
                                     <input type="radio" name="theme_color" value="{{ hex }}" class="d-none theme-color-radio" {% if current_user.theme_color == hex %}checked{% endif %}>

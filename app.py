@@ -43,6 +43,18 @@ cloudinary.config(
     api_secret=os.environ.get("CLOUDINARY_API_SECRET")
 )
 
+# Must match the swatches offered in templates/profile.html
+ALLOWED_THEME_COLORS = {
+    "#00E5FF",
+    "#00A8E1",
+    "#1CE783",
+    "#9E00FF",
+    "#00FFFF",
+    "#FF007F",
+    "#FFB400",
+    "#00D1B2",
+}
+
 # ---------------- MODELS ----------------
 
 class User(db.Model, UserMixin):
@@ -252,12 +264,16 @@ def profile():
             db.session.commit()
             flash("Profile updated successfully.", "success")
             
-        elif action == 'update_theme':
-            new_color = request.form.get('theme_color')
-            if new_color:
-                current_user.theme_color = new_color
-                db.session.commit()
-                flash("Theme color updated!", "success")
+        elif action == "update_theme":
+            new_color = request.form.get("theme_color", "").upper()
+
+            if new_color not in ALLOWED_THEME_COLORS:
+                flash("Invalid theme color.", "danger")
+                return redirect("/profile")
+
+            current_user.theme_color = new_color
+            db.session.commit()
+            flash("Theme color updated!", "success")
 
         return redirect('/profile')
 
